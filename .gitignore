@@ -13,3 +13,9 @@
 hs_err_pid*
 
 # Created by .ignore support plugin (hsz.mobi)
+
+
+dependency-reduced-pom.xml
+.idea/workspace.xml
+.idea/libraries
+.idea/copyright
