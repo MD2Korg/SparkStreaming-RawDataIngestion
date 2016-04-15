@@ -56,21 +56,20 @@ import static com.datastax.spark.connector.japi.CassandraStreamingJavaUtil.javaF
  */
 public class RawDataIngestion {
 
-    private static final String APP_NAME = this.getClass().getCanonicalName();
-
     private static final String CASSANDRA_HOST = "tatooine10dot";
     private static final String SPARK_MASTER = "spark://tatooine10dot:7077";
     private static final int INTERVAL_TIME = 5;
     private static final String BROKER_HOST = "tatooine10dot:9092";
     private static final String CEREBRALCORTEX_KEYSPACE = "cerebralcortex";
     private static final String CEREBRALCORTEX_TABLE = "rawdata";
+    private final String APP_NAME = this.getClass().getCanonicalName();
 
     /**
      * Main driver entry point
      *
      * @param args Unused
      */
-    public static void main(String [] args) {
+    public void main(String[] args) {
 
         // Configure Spark and Java contexts
         SparkConf conf = new SparkConf()
@@ -141,7 +140,7 @@ public class RawDataIngestion {
         );
 
         // Write datapoints to Cassandra
-        javaFunctions(datapoints).writerBuilder(CEREBRALCORTEX_KEYSPACE, CEREBRALCORTEX_TABLE, mapToRow(DataPoint.DataPoint.class)).saveToCassandra();
+        javaFunctions(datapoints).writerBuilder(CEREBRALCORTEX_KEYSPACE, CEREBRALCORTEX_TABLE, mapToRow(DataPoint.class)).saveToCassandra();
 
         // Extract samples as a string for debug logs
         JavaDStream<String> result = datapoints.map(
