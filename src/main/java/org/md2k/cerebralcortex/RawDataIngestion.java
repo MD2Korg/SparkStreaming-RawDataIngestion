@@ -54,7 +54,7 @@ import static com.datastax.spark.connector.japi.CassandraStreamingJavaUtil.javaF
  * Main class that implements a Spark-Streaming routine to extract Kafka messages that contain raw data readings and
  * persist them appropriately in a Cassandra data store.
  */
-public class RawDataIngestion {
+public final class RawDataIngestion {
 
     private static final String CASSANDRA_HOST = "tatooine10dot";
     private static final String SPARK_MASTER = "spark://tatooine10dot:7077";
@@ -62,19 +62,20 @@ public class RawDataIngestion {
     private static final String BROKER_HOST = "tatooine10dot:9092";
     private static final String CEREBRALCORTEX_KEYSPACE = "cerebralcortex";
     private static final String CEREBRALCORTEX_TABLE = "rawdata";
-    private final String APP_NAME = this.getClass().getCanonicalName();
+    private static final String APP_NAME = "RawDataIngestion";
 
     /**
      * Main driver entry point
      *
      * @param args Unused
      */
-    public void main(String[] args) {
+    public static void main(String[] args) {
 
         // Configure Spark and Java contexts
         SparkConf conf = new SparkConf()
                 .set("spark.cassandra.connection.host", CASSANDRA_HOST)
                 .setMaster(SPARK_MASTER)
+                .set("spark.cores.max", "4")
                 .setAppName(APP_NAME);
         JavaStreamingContext streamingContext = new JavaStreamingContext(conf, Durations.seconds(INTERVAL_TIME));
 
@@ -127,7 +128,7 @@ public class RawDataIngestion {
                                     jsonObject.get("datastream_id").getAsInt(),
                                     new SimpleDateFormat("yyyyMMdd").format(new Date(jo.getAsJsonObject().get("dateTime").getAsLong())),
                                     new Date(jo.getAsJsonObject().get("dateTime").getAsLong()),
-                                    jo.getAsJsonObject().get("offset").getAsInt(),
+                                    jo.getAsJsonObject().get("offset").getAsInt() / 60000,
                                     jo.getAsJsonObject().get("sample").toString()
                             );
 
