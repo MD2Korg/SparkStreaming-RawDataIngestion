@@ -125,7 +125,7 @@ public class RawDataIngestion {
                         for(JsonElement jo: jsonObject.get("data").getAsJsonArray()){
                             DataPoint dp = new DataPoint(
                                     jsonObject.get("datastream_id").getAsInt(),
-                                    new SimpleDateFormat("yyyymmdd").format(new Date(jo.getAsJsonObject().get("dateTime").getAsLong())),
+                                    new SimpleDateFormat("yyyyMMdd").format(new Date(jo.getAsJsonObject().get("dateTime").getAsLong())),
                                     new Date(jo.getAsJsonObject().get("dateTime").getAsLong()),
                                     jo.getAsJsonObject().get("offset").getAsInt(),
                                     jo.getAsJsonObject().get("sample").toString()
