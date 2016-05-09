@@ -49,6 +49,36 @@ import java.util.*;
 import static com.datastax.spark.connector.japi.CassandraJavaUtil.mapToRow;
 import static com.datastax.spark.connector.japi.CassandraStreamingJavaUtil.javaFunctions;
 
+/*
+Cassandra Init:
+
+CREATE KEYSPACE cc_SITE_production WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3'}  AND durable_writes = true;
+
+CREATE TABLE cc_SITE_production.rawdata (
+    datastream_id varint,
+    day text,
+    datetime timestamp,
+    offset int,
+    sample text,
+    PRIMARY KEY ((datastream_id, day), datetime)
+) WITH CLUSTERING ORDER BY (datetime ASC)
+    AND bloom_filter_fp_chance = 0.01
+    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+    AND comment = ''
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compression = {'chunk_length_in_kb': '64', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+    AND crc_check_chance = 1.0
+    AND dclocal_read_repair_chance = 0.1
+    AND default_time_to_live = 0
+    AND gc_grace_seconds = 864000
+    AND max_index_interval = 2048
+    AND memtable_flush_period_in_ms = 0
+    AND min_index_interval = 128
+    AND read_repair_chance = 0.0
+    AND speculative_retry = '99PERCENTILE';
+ */
+
+
 
 /**
  * Main class that implements a Spark-Streaming routine to extract Kafka messages that contain raw data readings and
@@ -60,9 +90,9 @@ public final class RawDataIngestion {
     private static final String SPARK_MASTER = "spark://tatooine10dot:7077";
     private static final int INTERVAL_TIME = 5;
     private static final String BROKER_HOST = "tatooine10dot:9092";
-    private static final String CEREBRALCORTEX_KEYSPACE = "cerebralcortex";
     private static final String CEREBRALCORTEX_TABLE = "rawdata";
-    private static final String APP_NAME = "RawDataIngestion";
+    private static final String APP_NAME = "RawDataIngestion-";
+    private static String CEREBRALCORTEX_KEYSPACE = "";
 
     /**
      * Main driver entry point
@@ -70,18 +100,26 @@ public final class RawDataIngestion {
      * @param args Unused
      */
     public static void main(String[] args) {
+        // Setup Kafka topics to listen to
+        //        String topics = "RAILS-bulkload";
+        if (args.length < 1) {
+            System.err.println("Missing Cassandra Keyspace: e.g. cerebralcortex");
+            System.err.println("Missing Kafka BulkLoad Topic: e.g. DATABASE-RAILS-bulkload");
+            return;
+        }
+        String topics = args[1];
+        HashSet<String> topicsSet = new HashSet<>(Arrays.asList(topics.split(",")));
+
+        CEREBRALCORTEX_KEYSPACE = args[0];
 
         // Configure Spark and Java contexts
         SparkConf conf = new SparkConf()
                 .set("spark.cassandra.connection.host", CASSANDRA_HOST)
                 .setMaster(SPARK_MASTER)
                 .set("spark.cores.max", "4")
-                .setAppName(APP_NAME);
+                .setAppName(APP_NAME + CEREBRALCORTEX_KEYSPACE);
         JavaStreamingContext streamingContext = new JavaStreamingContext(conf, Durations.seconds(INTERVAL_TIME));
 
-        // Setup Kafka topics to listen to
-        String topics = "RAILS-bulkload";
-        HashSet<String> topicsSet = new HashSet<>(Arrays.asList(topics.split(",")));
 
         // Configure kafka connection
         HashMap<String, String> kafkaParams = new HashMap<>();

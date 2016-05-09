@@ -6,7 +6,7 @@
 
     <groupId>org.md2k.cerebralcortex</groupId>
     <artifactId>RawDataIngestion</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
     <build>
         <plugins>
             <plugin>
