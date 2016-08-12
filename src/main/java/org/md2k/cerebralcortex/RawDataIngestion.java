@@ -54,28 +54,78 @@ Cassandra Init:
 
 CREATE KEYSPACE cc_SITE_production WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3'}  AND durable_writes = true;
 
-CREATE TABLE cc_SITE_production.rawdata (
-    datastream_id varint,
-    day text,
-    datetime timestamp,
-    offset int,
-    sample text,
-    PRIMARY KEY ((datastream_id, day), datetime)
-) WITH CLUSTERING ORDER BY (datetime ASC)
-    AND bloom_filter_fp_chance = 0.01
-    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
-    AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
-    AND compression = {'chunk_length_in_kb': '64', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
-    AND crc_check_chance = 1.0
-    AND dclocal_read_repair_chance = 0.1
-    AND default_time_to_live = 0
-    AND gc_grace_seconds = 864000
-    AND max_index_interval = 2048
-    AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair_chance = 0.0
-    AND speculative_retry = '99PERCENTILE';
+CREATE TABLE cc_SITE_production.data (
+    datastream_identifier uuid,
+    day varchar,
+    starttime timestamp,
+    endtime timestamp,
+    offset smallint,
+    sample varchar,
+    PRIMARY KEY ((datastream_id, day), starttime, endtime)
+) WITH CLUSTERING ORDER BY (starttime ASC);
+
+ CREATE TABLE cc_SITE_production.datastreams (
+
+    participant_identifier uuid,
+    datastream_identifier uuid,
+
+    datadescriptor varchar,
+
+    datasource_identifier varchar,
+    datasource_type varchar,
+    datasource_metadata varchar,
+
+    application_identifier varchar,
+    application_type varchar,
+    application_metadata varchar,
+
+    platform_identifier varchar,
+    platform_type varchar,
+    platform_metadata varchar,
+
+    platformapp_identifier varchar,
+    platformapp_type varchar,
+    platformapp_metadata varchar,
+
+    PRIMARY KEY (participant_id, datastream_id)
+ );
+
+
+ CREATE TABLE cc_SITE_production.studies (
+    study_identifier varchar,
+    study_name varchar,
+    participant_identifier uuid,
+    participant_name varchar,
+    PRIMARY KEY (study_identifier, participant_identifier)
+ );
+
+//TWH: These need work, but are in the right direction
+ create materialized view studies_by_name
+ as select study_identifier, study_name, participant_identifier, participant_name
+ from studies
+ where study_identifier is not null and study_name is not null
+ primary key (study_identifier, study_name)
+ with clustering order by (study_name asc);
+
+create materialized view studies_by_participant
+ as select study_identifier, study_name, participant_identifier, participant_name
+ from studies
+ where study_identifier is not null and participant_name is not null
+ primary key (study_identifier, participant_name)
+ with clustering order by (participant_name asc);
+
+
+ CREATE TABLE cc_SITE_production.count (
+    datastream_id uuid,
+    day varchar,
+    label varchar,
+    count counter,
+    PRIMARY KEY ((datastream_id, day), label)
+ ) with clustering order by (label asc);
+
+
+
+
  */
 
 
