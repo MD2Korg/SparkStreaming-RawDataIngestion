@@ -49,86 +49,6 @@ import java.util.*;
 import static com.datastax.spark.connector.japi.CassandraJavaUtil.mapToRow;
 import static com.datastax.spark.connector.japi.CassandraStreamingJavaUtil.javaFunctions;
 
-/*
-Cassandra Init:
-
-CREATE KEYSPACE cc_SITE_production WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3'}  AND durable_writes = true;
-
-CREATE TABLE cc_SITE_production.data (
-    datastream_identifier uuid,
-    day varchar,
-    starttime timestamp,
-    endtime timestamp,
-    offset smallint,
-    sample varchar,
-    PRIMARY KEY ((datastream_id, day), starttime, endtime)
-) WITH CLUSTERING ORDER BY (starttime ASC);
-
- CREATE TABLE cc_SITE_production.datastreams (
-
-    participant_identifier uuid,
-    datastream_identifier uuid,
-
-    datadescriptor varchar,
-
-    datasource_identifier varchar,
-    datasource_type varchar,
-    datasource_metadata varchar,
-
-    application_identifier varchar,
-    application_type varchar,
-    application_metadata varchar,
-
-    platform_identifier varchar,
-    platform_type varchar,
-    platform_metadata varchar,
-
-    platformapp_identifier varchar,
-    platformapp_type varchar,
-    platformapp_metadata varchar,
-
-    PRIMARY KEY (participant_id, datastream_id)
- );
-
-
- CREATE TABLE cc_SITE_production.studies (
-    study_identifier varchar,
-    study_name varchar,
-    participant_identifier uuid,
-    participant_name varchar,
-    PRIMARY KEY (study_identifier, participant_identifier)
- );
-
-//TWH: These need work, but are in the right direction
- create materialized view studies_by_name
- as select study_identifier, study_name, participant_identifier, participant_name
- from studies
- where study_identifier is not null and study_name is not null
- primary key (study_identifier, study_name)
- with clustering order by (study_name asc);
-
-create materialized view studies_by_participant
- as select study_identifier, study_name, participant_identifier, participant_name
- from studies
- where study_identifier is not null and participant_name is not null
- primary key (study_identifier, participant_name)
- with clustering order by (participant_name asc);
-
-
- CREATE TABLE cc_SITE_production.count (
-    datastream_id uuid,
-    day varchar,
-    label varchar,
-    count counter,
-    PRIMARY KEY ((datastream_id, day), label)
- ) with clustering order by (label asc);
-
-
-
-
- */
-
-
 
 /**
  * Main class that implements a Spark-Streaming routine to extract Kafka messages that contain raw data readings and
@@ -166,7 +86,7 @@ public final class RawDataIngestion {
         SparkConf conf = new SparkConf()
                 .set("spark.cassandra.connection.host", CASSANDRA_HOST)
                 .setMaster(SPARK_MASTER)
-                .set("spark.cores.max", "4")
+                .set("spark.cores.max", "1")
                 .setAppName(APP_NAME + CEREBRALCORTEX_KEYSPACE);
         JavaStreamingContext streamingContext = new JavaStreamingContext(conf, Durations.seconds(INTERVAL_TIME));
 
@@ -174,7 +94,7 @@ public final class RawDataIngestion {
         // Configure kafka connection
         HashMap<String, String> kafkaParams = new HashMap<>();
         kafkaParams.put("metadata.broker.list", BROKER_HOST);
-//        kafkaParams.put("auto.offset.reset", "smallest");
+        kafkaParams.put("auto.offset.reset", "smallest");
 
         // Listen for Kafka messages
         JavaPairInputDStream<String, String> directKafkaStream = KafkaUtils.createDirectStream(streamingContext, String.class, String.class, StringDecoder.class, StringDecoder.class, kafkaParams, topicsSet);
